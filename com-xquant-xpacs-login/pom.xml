@@ -1,0 +1,46 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <parent>
+      <artifactId>com-xquant-parent</artifactId>
+      <groupId>com.xquant</groupId>
+      <version>2.0.0-SNAPSHOT</version>
+  </parent>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.xquant</groupId>
+  <artifactId>com-xquant-xpacs-login</artifactId>
+  <version>2.0.0-SNAPSHOT</version>
+  
+  
+  
+    <dependencies>
+        <dependency>
+            <groupId>com.xquant</groupId>
+            <artifactId>com-xquant-base</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.session</groupId>
+            <artifactId>spring-session-data-redis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.session</groupId>
+            <artifactId>spring-session-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.xquant</groupId>
+            <artifactId>com-xquant-sm4Util</artifactId>
+            <version>1.1.4c</version>
+        </dependency>
+        <dependency>
+            <groupId>com.xquant</groupId>
+            <artifactId>com-xquant-auth</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.xquant</groupId>
+            <artifactId>com-xquant-login</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com-xquant</groupId>
+            <artifactId>com-xquant-casclient</artifactId>
+            <version>3.4.1</version>
+        </dependency>
+    </dependencies>
+</project>

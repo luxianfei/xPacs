@@ -1,0 +1,104 @@
+# Server HTTP port.
+server:
+  port: 7009
+  servlet:
+    context-path: /
+  tomcat:
+    max-threads: 800
+    max-connections: 20000
+eureka:
+  client:
+    service-url.defaultZone: http://191.168.0.62:7111/eureka
+  instance:
+    prefer-ip-address: true
+    #心跳配置
+    lease-renewal-interval-in-seconds: 1
+    lease-expiration-duration-in-seconds: 2
+feign:
+  client:
+    config:
+      default:
+        connect-timeout: 10000
+        read-timeout: 600000
+spring:
+  application:
+    name: xpacs-service-dev
+  datasource:
+    druid:
+      #用来区分多数据源时候的名称，prefix表示参数的前缀
+      driver-class-name: oracle.jdbc.driver.OracleDriver
+      url: jdbc:oracle:thin:@191.168.10.1:1521:xqadev
+      username: xpacs_trd
+      password: xpar
+      #filters: stat, wall, log4j2
+      initial-size: 10
+      minIdle: 10
+      max-active: 100
+      maxWait: 180000
+      test-on-borrow: true
+      stat-view-servlet:
+        login-username: druid
+        login-password: druid_xrisk
+  main:
+    allow-bean-definition-overriding: true
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+# Redis Cluster Configuration
+---
+spring:
+  redis:
+    #单机配置如下，database默认为0，可不配置
+    database: 0
+    host: 191.168.10.1
+    port: 6380
+    #集群配置如下
+    #cluster:
+    #  nodes: 191.168.0.61:6480,191.168.0.61:6481,191.168.0.61:6482,191.168.0.61:6483,191.168.0.61:6484,191.168.0.61:6485
+    #  max-redirects: 3
+    #  enable: true
+    #其余共同参数配置
+#    password: redis
+    timeout: 100000ms
+    lettuce:
+      pool:
+        max-active: 1000  # 连接池最大连接数
+        max-idle: 10      # 连接池最大空闲连接
+        min-idle: 5       # 连接池最小空闲连接
+        max-wait: -1ms    # 连接池最大阻塞时间
+  messages:
+    basename: i18n/xPimsMessages
+# Engine Async Service ThreadPool Configuration
+thread:
+  pool:
+    corePoolSize: 10
+    maxPoolSize: 100
+    queueCapacity: 10000
+    keepAliveSeconds: 60
+    threadNamePrefix: async-service-
+
+engine:
+  index:
+    remoting:
+      enabled: true
+      service-url: http://INDEX-SERVICE-62
+appserver:
+  login:
+#    excludePath: /PlatformSso
+
+---
+tomcat:
+  uri-encoding: UTF-8
+
+# 数据权限分类，00表示控制组合权限，02表示控制计划权限
+appserver:
+  port:
+    tree-type: '02'
+    
+sso:
+  enabled: true
+  cas:
+    casServerLoginUrl: http://191.168.0.27:8080/cas
+    serverName: http://localhost:8080/ssoLogin
