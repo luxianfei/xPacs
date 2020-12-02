@@ -15,19 +15,19 @@
  ********************************************/
 package com.xquant.xpacs.base.port.service.impl;
 
-import com.xquant.xpacs.base.port.service.api.ITprtService;
-import com.xquant.xpims.tprt.entity.dto.TprtAnalysisDTO;
-import com.xquant.xpims.tprt.entity.po.Tprt;
-import com.xquant.xpims.tprt.entity.po.TprtExample;
-import com.xquant.xpims.tprt.entity.po.ext.TprtExt;
-import com.xquant.xpims.tprt.mapper.ext.TprtExtMapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.xquant.xpacs.base.port.service.api.ITprtService;
+import com.xquant.xpims.tprt.entity.po.Tprt;
+import com.xquant.xpims.tprt.entity.po.TprtExample;
+import com.xquant.xpims.tprt.entity.po.TprtExample.Criteria;
+import com.xquant.xpims.tprt.mapper.ext.TprtExtMapper;
 
 /**
  * @ClassName: TprtServiceImpl
@@ -69,4 +69,28 @@ public class TprtServiceImpl implements ITprtService {
         portCodes.add(portCode);
         return tprtExtMapper.getMaxNavDateByPortCode(portCodes);
     }
+
+	/**
+	 * <p>Title: getRetainPortListByPlanCode</p>
+	 * <p>Description: </p>
+	 * @param planCode
+	 * @param tDate
+	 * @return
+	 * @see com.xquant.xpacs.base.port.service.api.ITprtService#getRetainPortListByPlanCode(java.lang.String, java.lang.String)
+	 */
+	@Override
+	public List<Tprt> getRetainPortListByPlanCode(String planCode, String tDate) {
+		TprtExample example = new TprtExample();
+        Criteria criteria = example.createCriteria();
+        criteria.andPlanCodeEqualTo(planCode);
+        criteria.andOverDateGreaterThanOrEqualTo(tDate);
+        
+        Criteria criteria2 = example.createCriteria();
+        criteria2.andPlanCodeEqualTo(planCode);
+        criteria2.andOverDateIsNull();
+        example.or(criteria2);
+        
+        List<Tprt> list = tprtMapper.selectByExample(example);
+        return list;
+	}
 }

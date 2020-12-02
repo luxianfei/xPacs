@@ -78,17 +78,8 @@ public class PlanOverviewServiceImpl implements IPlanOverviewService {
 	 */
 	@Override
 	public HttpBaseResponse calcPlanNav(PlanOverviewParamDTO planOverviewParamDTO) {
-		PlanOverviewParamDTO preNavParam = new PlanOverviewParamDTO();
-        BeanUtils.copyProperties(planOverviewParamDTO, preNavParam);
-
 		String moduleNo1 = "navTable";
-    	String moduleNo2 = "preNavTable";
-    	Future<AnalysisIndexCalcResultBO> future1 = null;
-    	Future<AnalysisIndexCalcResultBO> future2 = null;
-
     	String planCode = planOverviewParamDTO.getPlanCode();
-    	String begDate = planOverviewParamDTO.getBegDate();
-    	String newDate = DateUtils.addDate(begDate, 1);
 
     	// 判断计划现金流数据来源--导入/复合
         TplanInfo plan = planInfoService.getPlanInfo(planCode);
@@ -104,51 +95,31 @@ public class PlanOverviewServiceImpl implements IPlanOverviewService {
             planOverviewParamDTO.setPortCode(portCodes);
             planOverviewParamDTO.setPortType(PortType.port.getCode());
             planOverviewParamDTO.setPortCalcType(PortCalcType.single.name());
-            future1 = analysisIndexAsyncCalcService.asyncCalc(moduleNo1, planOverviewParamDTO);
-            // 计算期初类指标
-            preNavParam.setPortCode(portCodes);
-            preNavParam.setPortType(PortType.port.getCode());
-            preNavParam.setPortCalcType(PortCalcType.single.name());
-            preNavParam.setBegDate(newDate);
-            future2 = analysisIndexAsyncCalcService.asyncCalc(moduleNo2, preNavParam);
         } else { // 计划复合计算-计划及其下组合
         	List<String> portCodes = new ArrayList<>();
         	portCodes.add(planCode);
         	planOverviewParamDTO.setPortCode(portCodes);
         	planOverviewParamDTO.setPortType(PortType.plan.getCode());
         	planOverviewParamDTO.setPortCalcType(PortCalcType.compositeAndContrast.name());
-        	future1 = analysisIndexAsyncCalcService.asyncCalc(moduleNo1, planOverviewParamDTO);
-        	// 计算期初类指标
-        	preNavParam.setPortCode(portCodes);
-        	preNavParam.setPortType(PortType.plan.getCode());
-        	preNavParam.setPortCalcType(PortCalcType.compositeAndContrast.name());
-        	preNavParam.setBegDate(newDate);
-            future2 = analysisIndexAsyncCalcService.asyncCalc(moduleNo2, preNavParam);
         }
-
+        // 指标计算
+        AnalysisIndexCalcResultBO resultBO = analysisIndexCalcService.calc(moduleNo1, planOverviewParamDTO);
+        
         List<Map<String,Object>> newResultList = new ArrayList<Map<String,Object>>();
         Map<String,Object> planMap = new HashMap<String, Object>();
-        try {
-			AnalysisIndexCalcResultBO result1 = future1.get();
-			AnalysisIndexCalcResultBO result2 = future2.get();
-			List<Map<String,Object>> resultList1 = result1.getResultList();
-			List<Map<String,Object>> resultList2 = result2.getResultList();
+        if (resultBO.getSuccessful()) {
+			List<Map<String,Object>> resultList = resultBO.getResultList();
 
-			// 合并指标数据
-			Map<String,Map<String,Object>> newMap = new HashMap<String, Map<String,Object>>();
-			for (Map<String,Object> map2 : resultList2) {
-				newMap.put(map2.get("portCode").toString(), map2);
-			}
-			for (Map<String,Object> map1 : resultList1) {
-				if(newMap.containsKey(map1.get("portCode"))) {
-					map1.putAll(newMap.get(map1.get("portCode").toString()));
-				}
+			for (Map<String,Object> map1 : resultList) {
 				if (map1.get("portCode").equals(planCode)) {
 					planMap.putAll(map1);
 					// 企业年金计划 总净值占比,排名
 					planMap.put("pName", "企业年金计划");
 					planMap.put("navRatio", 100);
 					planMap.put("rank", "--");
+					planMap.put("gbPUnitNav", null);
+					planMap.put("gbPUnitNavPre", null);
+					planMap.put("gbPUnitNavPreBY", null);
 				} else if (map1.get("gbPTotalNav") != null){
 					newResultList.add(map1);
 				}
@@ -167,14 +138,9 @@ public class PlanOverviewServiceImpl implements IPlanOverviewService {
 				rank++;
 			}
 			newResultList.add(planMap);
+        }
 
-		} catch (InterruptedException e) {
-			throw new RuntimeException(e);
-		} catch (ExecutionException e) {
-			throw new RuntimeException(e);
-		}
-
-        HttpBaseResponse baseResponse = HttpBaseResponseUtil.getSuccessResponse(newResultList);
+        HttpBaseResponse baseResponse = new HttpBaseResponse(resultBO.getCode(), resultBO.getMessage(), newResultList);
     	return baseResponse;
 	}
 
@@ -186,44 +152,30 @@ public class PlanOverviewServiceImpl implements IPlanOverviewService {
 	 */
 	@Override
 	public HttpBaseResponse calcPortNav(PlanOverviewParamDTO planOverviewParamDTO) {
-		PlanOverviewParamDTO preNavParam = new PlanOverviewParamDTO();
-        BeanUtils.copyProperties(planOverviewParamDTO, preNavParam);
         PlanOverviewParamDTO planOverviewServiceParam2 = new PlanOverviewParamDTO();
         BeanUtils.copyProperties(planOverviewParamDTO, planOverviewServiceParam2);
-        PlanOverviewParamDTO preNavParam2 = new PlanOverviewParamDTO();
-        BeanUtils.copyProperties(planOverviewParamDTO, preNavParam2);
 
 		String moduleNo1 = "navTable";
-    	String moduleNo2 = "preNavTable";
     	Future<AnalysisIndexCalcResultBO> future1 = null;
-    	Future<AnalysisIndexCalcResultBO> future2 = null;
     	Future<AnalysisIndexCalcResultBO> future3 = null;
-    	Future<AnalysisIndexCalcResultBO> future4 = null;
 
     	List<String> portCodeList = planOverviewParamDTO.getPortCode();
     	String portCode = portCodeList.get(0);
     	String planCode = tprtService.getTprtByPortCode(portCode).getPlanCode();
-
-    	String begDate = planOverviewParamDTO.getBegDate();
-    	String newDate = DateUtils.addDate(begDate, 1);
 
     	// 判断计划现金流数据来源--导入/复合
         TplanInfo plan = planInfoService.getPlanInfo(planCode);
         // 将计划当成组合计算,直接取值
         if (CalculateType.directCalc.getCode().equals(plan.getCalculateType())) {
         	List<String> portCodes = new ArrayList<>();
-        	portCodes.add(portCode);// 组合
-        	portCodes.add(planCode);// 计划
+        	// 组合
+        	portCodes.add(portCode);
+        	// 计划
+        	portCodes.add(planCode);
             planOverviewParamDTO.setPortCode(portCodes);
             planOverviewParamDTO.setPortType(PortType.port.getCode());
             planOverviewParamDTO.setPortCalcType(PortCalcType.single.name());
             future1 = analysisIndexAsyncCalcService.asyncCalc(moduleNo1, planOverviewParamDTO);
-            // 计算期初类指标
-            preNavParam.setPortCode(portCodes);
-            preNavParam.setPortType(PortType.port.getCode());
-            preNavParam.setPortCalcType(PortCalcType.single.name());
-            preNavParam.setBegDate(newDate);
-            future2 = analysisIndexAsyncCalcService.asyncCalc(moduleNo2, preNavParam);
         } else { // 计划复合计算-计划及其下组合
         	// 对组合进行计算
         	List<String> portCodes = new ArrayList<>();
@@ -232,12 +184,6 @@ public class PlanOverviewServiceImpl implements IPlanOverviewService {
         	planOverviewParamDTO.setPortType(PortType.port.getCode());
         	planOverviewParamDTO.setPortCalcType(PortCalcType.single.name());
         	future1 = analysisIndexAsyncCalcService.asyncCalc(moduleNo1, planOverviewParamDTO);
-            // 计算期初类指标
-        	preNavParam.setPortCode(portCodes);
-            preNavParam.setPortType(PortType.port.getCode());
-            preNavParam.setPortCalcType(PortCalcType.single.name());
-            preNavParam.setBegDate(newDate);
-            future2 = analysisIndexAsyncCalcService.asyncCalc(moduleNo2, preNavParam);
 
             // 对计划进行计算
         	portCodes = new ArrayList<>();
@@ -246,48 +192,30 @@ public class PlanOverviewServiceImpl implements IPlanOverviewService {
         	planOverviewServiceParam2.setPortType(PortType.plan.getCode());
         	planOverviewServiceParam2.setPortCalcType(PortCalcType.single.name());
         	future3 = analysisIndexAsyncCalcService.asyncCalc(moduleNo1, planOverviewServiceParam2);
-            // 计算期初类指标
-        	preNavParam2.setPortCode(portCodes);
-        	preNavParam2.setPortType(PortType.plan.getCode());
-        	preNavParam2.setPortCalcType(PortCalcType.single.name());
-        	preNavParam2.setBegDate(newDate);
-            future4 = analysisIndexAsyncCalcService.asyncCalc(moduleNo2, preNavParam2);
         }
 
         List<Map<String,Object>> newResultList = new ArrayList<Map<String,Object>>();
         Map<String,Object> planMap = new HashMap<String, Object>();
         try {
 			AnalysisIndexCalcResultBO result1 = future1.get();
-			AnalysisIndexCalcResultBO result2 = future2.get();
 			List<Map<String,Object>> resultList1 = result1.getResultList();
-			List<Map<String,Object>> resultList2 = result2.getResultList();
 
 			if (future3 != null) {
 				AnalysisIndexCalcResultBO result3 = future3.get();
 				List<Map<String,Object>> resultList3 = result3.getResultList();
 				resultList1.addAll(resultList3);
 			}
-			if (future4 != null) {
-				AnalysisIndexCalcResultBO result4 = future4.get();
-				List<Map<String,Object>> resultList4 = result4.getResultList();
-				resultList2.addAll(resultList4);
-			}
 
-			// 合并指标数据
-			Map<String,Map<String,Object>> newMap = new HashMap<String, Map<String,Object>>();
-			for (Map<String,Object> map2 : resultList2) {
-				newMap.put(map2.get("portCode").toString(), map2);
-			}
 			for (Map<String,Object> map1 : resultList1) {
-				if(newMap.containsKey(map1.get("portCode"))) {
-					map1.putAll(newMap.get(map1.get("portCode").toString()));
-				}
 				if (map1.get("portCode").equals(planCode)) {
 					planMap.putAll(map1);
 					// 企业年金计划 总净值占比,排名
 					planMap.put("pName", "企业年金计划");
 					planMap.put("navRatio", 100);
 					planMap.put("rank", "--");
+					planMap.put("gbPUnitNav", null);
+					planMap.put("gbPUnitNavPre", null);
+					planMap.put("gbPUnitNavPreBY", null);
 				} else {
 					newResultList.add(map1);
 				}
@@ -422,8 +350,10 @@ public class PlanOverviewServiceImpl implements IPlanOverviewService {
         // 将计划当成组合计算,直接取值
         if (CalculateType.directCalc.getCode().equals(plan.getCalculateType())) {
         	List<String> portCodes = new ArrayList<>();
-        	portCodes.add(portCode);// 组合
-        	portCodes.add(planCode);// 计划
+        	// 组合
+        	portCodes.add(portCode);
+        	// 计划
+        	portCodes.add(planCode);
             planOverviewParamDTO.setPortCode(portCodes);
             planOverviewParamDTO.setPortType(PortType.port.getCode());
             planOverviewParamDTO.setPortCalcType(PortCalcType.single.name());

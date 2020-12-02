@@ -16,15 +16,11 @@
 package com.xquant.xpacs.assetallocation.controller;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -32,7 +28,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.xquant.base.index.enums.PortCalcType;
 import com.xquant.base.index.enums.PortType;
-import com.xquant.common.util.DateUtils;
 import com.xquant.xpacs.analysis.entity.bo.AnalysisIndexCalcResultBO;
 import com.xquant.xpacs.analysis.service.api.IAnalysisIndexAsyncCalcService;
 import com.xquant.xpacs.analysis.service.api.IAnalysisIndexCalcService;
@@ -41,7 +36,6 @@ import com.xquant.xpacs.assetallocation.entity.dto.TransationCompParamDTO;
 import com.xquant.xpacs.assetallocation.entity.dto.TransationDetailParamDTO;
 import com.xquant.xpacs.assetallocation.entity.dto.TransationOverviewParamDTO;
 import com.xquant.xpacs.base.http.HttpBaseResponse;
-import com.xquant.xpacs.base.http.HttpBaseResponseUtil;
 import com.xquant.xpacs.investAnalysis.enums.CalcObjType;
 
 /**
@@ -72,9 +66,6 @@ public class TransationInfoController {
     @RequestMapping(value = "/calcTransationOverview", method = { RequestMethod.GET, RequestMethod.POST })
     public HttpBaseResponse calcTransationOverview(TransationOverviewParamDTO transationOverviewParamDTO) {
     	String moduleNo1 = "transactionOverview";
-    	String moduleNo2 = "preTransactionOverview";
-    	String begDate = transationOverviewParamDTO.getBegDate();
-    	String newDate = DateUtils.addDate(begDate, 1);
     	
     	String calcObjType = transationOverviewParamDTO.getCalcObjType();
     	// 对象类型为组合
@@ -87,38 +78,10 @@ public class TransationInfoController {
     		transationOverviewParamDTO.setPortType(PortType.plan.getCode());
     		transationOverviewParamDTO.setPortCalcType(PortCalcType.single.name());
     	}
-    	TransationOverviewParamDTO preOverviewParam = new TransationOverviewParamDTO();
-        BeanUtils.copyProperties(transationOverviewParamDTO, preOverviewParam);
-        preOverviewParam.setBegDate(newDate);
-    	
         // 指标计算
-        Future<AnalysisIndexCalcResultBO> future1 = analysisIndexAsyncCalcService.asyncCalc(moduleNo1, transationOverviewParamDTO);
-        Future<AnalysisIndexCalcResultBO> future2 = analysisIndexAsyncCalcService.asyncCalc(moduleNo2, preOverviewParam);
+    	AnalysisIndexCalcResultBO resultBO = analysisIndexCalcService.calc(moduleNo1, transationOverviewParamDTO);
         
-        List<Map<String,Object>> newResultList = new ArrayList<Map<String,Object>>();
-        try {
-			AnalysisIndexCalcResultBO result1 = future1.get();
-			AnalysisIndexCalcResultBO result2 = future2.get();
-			newResultList = result1.getResultList();
-			List<Map<String,Object>> resultList2 = result2.getResultList();
-			
-			// 合并期初指标数据
-			Map<String,Map<String,Object>> newMap = new HashMap<String, Map<String,Object>>();
-			for (Map<String,Object> map2 : resultList2) {
-				newMap.put(map2.get("nodeId").toString(), map2);
-			}
-			for (Map<String,Object> map1 : newResultList) {
-				if(newMap.containsKey(map1.get("nodeId").toString())) {
-					map1.putAll(newMap.get(map1.get("nodeId").toString()));
-				}
-			}
-		} catch (InterruptedException e) {
-			throw new RuntimeException(e);
-		} catch (ExecutionException e) {
-			throw new RuntimeException(e);
-		}
-        
-        HttpBaseResponse baseResponse = HttpBaseResponseUtil.getSuccessResponse(newResultList);
+        HttpBaseResponse baseResponse = new HttpBaseResponse(resultBO.getCode(), resultBO.getMessage(), resultBO.getResultList());
     	return baseResponse;
     }
     
@@ -133,44 +96,24 @@ public class TransationInfoController {
     @RequestMapping(value = "/calcTransationComp", method = { RequestMethod.GET, RequestMethod.POST })
     public HttpBaseResponse calcTransationComp(TransationCompParamDTO transationCompParamDTO) {
     	String moduleNo1 = "transactionComp";
-    	String moduleNo2 = "preTransactionComp";
-    	String begDate = transationCompParamDTO.getBegDate();
-    	String newDate = DateUtils.addDate(begDate, 1);
     	
 		transationCompParamDTO.setPortType(PortType.port.getCode());
 		transationCompParamDTO.setPortCalcType(PortCalcType.single.name());
-		TransationCompParamDTO preCompParam = new TransationCompParamDTO();
-        BeanUtils.copyProperties(transationCompParamDTO, preCompParam);
-        preCompParam.setBegDate(newDate);
-    	
-        // 指标计算
-        Future<AnalysisIndexCalcResultBO> future1 = analysisIndexAsyncCalcService.asyncCalc(moduleNo1, transationCompParamDTO);
-        Future<AnalysisIndexCalcResultBO> future2 = analysisIndexAsyncCalcService.asyncCalc(moduleNo2, preCompParam);
+		// 指标计算
+		AnalysisIndexCalcResultBO resultBO = analysisIndexCalcService.calc(moduleNo1, transationCompParamDTO);
         
         List<Map<String,Object>> newResultList = new ArrayList<Map<String,Object>>();
-        try {
-			AnalysisIndexCalcResultBO result1 = future1.get();
-			AnalysisIndexCalcResultBO result2 = future2.get();
-			newResultList = result1.getResultList();
-			List<Map<String,Object>> resultList2 = result2.getResultList();
-			
-			// 合并期初指标数据
-			Map<String,Map<String,Object>> newMap = new HashMap<String, Map<String,Object>>();
-			for (Map<String,Object> map2 : resultList2) {
-				newMap.put(map2.get("portCode").toString(), map2);
-			}
-			for (Map<String,Object> map1 : newResultList) {
-				if(newMap.containsKey(map1.get("portCode"))) {
-					map1.putAll(newMap.get(map1.get("portCode").toString()));
-				}
-			}
-		} catch (InterruptedException e) {
-			throw new RuntimeException(e);
-		} catch (ExecutionException e) {
-			throw new RuntimeException(e);
-		}
+        if (resultBO.getSuccessful()) {
+        	List<Map<String,Object>> resultList1 = resultBO.getResultList();
+        	// 剔除无值的记录
+        	for (Map<String,Object> map1 : resultList1) {
+        		if (map1.get("gbHldAvgMtm") != null || map1.get("totalAmount") != null) {
+        			newResultList.add(map1);
+        		}
+        	}
+        }
         
-        HttpBaseResponse baseResponse = HttpBaseResponseUtil.getSuccessResponse(newResultList);
+        HttpBaseResponse baseResponse = new HttpBaseResponse(resultBO.getCode(), resultBO.getMessage(), newResultList);
     	return baseResponse;
     }
     
@@ -184,12 +127,15 @@ public class TransationInfoController {
     @AnalysisResponseCacheAble
     @RequestMapping(value = "/calcTransationDetail", method = { RequestMethod.GET, RequestMethod.POST })
     public HttpBaseResponse calcTransationDetail(TransationDetailParamDTO transationDetailParamDTO) {
-    	String moduleNo = "transactionDetail";
-    	// 根据不同节点选择不同方案
-    	if ("债券".equals(transationDetailParamDTO.getNodeName()) || 
-    			"股票".equals(transationDetailParamDTO.getNodeName())) {
-    		moduleNo = "indTransactionDetail";
-    	}
+    	String moduleNo = "indTransactionDetail";
+//    	String moduleNo = "transactionDetail";
+//    	// 根据不同节点选择不同方案
+//    	String bnd = "债券";
+//    	String stk = "股票";
+//    	if (bnd.equals(transationDetailParamDTO.getNodeName()) || 
+//    			stk.equals(transationDetailParamDTO.getNodeName())) {
+//    		moduleNo = "indTransactionDetail";
+//    	}
     	
     	String calcObjType = transationDetailParamDTO.getCalcObjType();
     	// 对象类型为组合

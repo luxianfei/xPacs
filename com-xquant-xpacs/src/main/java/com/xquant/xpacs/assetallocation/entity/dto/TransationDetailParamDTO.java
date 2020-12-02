@@ -31,6 +31,12 @@ public class TransationDetailParamDTO extends AnalysisBaseParamDTO {
     private String nodeId;
     /**分组节点名称,股票、债券、基金、养老金等*/
     private String nodeName;
+    /**是否走落地表*/
+    private String isLand;
+    /**分页-条数*/
+    private int pageSize;
+    /**分页-页数*/
+    private int pageNum;
     
     public String getCalcObjType() {
     	return calcObjType;
@@ -56,5 +62,28 @@ public class TransationDetailParamDTO extends AnalysisBaseParamDTO {
 		this.nodeName = nodeName;
 	}
 
-    
+	public String getIsLand() {
+		return isLand;
+	}
+
+	public void setIsLand(String isLand) {
+		this.isLand = isLand;
+	}
+
+	public int getPageSize() {
+		return pageSize;
+	}
+
+	public void setPageSize(int pageSize) {
+		this.pageSize = pageSize;
+	}
+
+	public int getPageNum() {
+		return pageNum;
+	}
+
+	public void setPageNum(int pageNum) {
+		this.pageNum = pageNum;
+	}
+
 }

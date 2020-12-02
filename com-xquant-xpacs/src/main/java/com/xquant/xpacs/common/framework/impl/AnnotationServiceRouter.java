@@ -126,7 +126,9 @@ public class AnnotationServiceRouter implements IServiceRouter {
             }
             e.printStackTrace();
         } finally {
-            requestContext.setServiceEndTime(System.currentTimeMillis());
+		    if(requestContext != null) {
+                requestContext.setServiceEndTime(System.currentTimeMillis());
+            }
 		}
 		return requestContext.getResponse();
 	}

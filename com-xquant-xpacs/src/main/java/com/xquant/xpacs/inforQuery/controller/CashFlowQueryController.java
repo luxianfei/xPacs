@@ -69,12 +69,12 @@ public class CashFlowQueryController {
     private IPlanInfoService planInfoService;
     @Autowired
     private ITprtService tprtService;
-	
+
 	/**
 	 * @Title: getCashFlow
 	 * @Description: 现金流计算
-	 * @param: cashFlowQueryParamDTO 
-	 * @return: HttpBaseResponse   
+	 * @param: cashFlowQueryParamDTO
+	 * @return: HttpBaseResponse
 	 * @throws
 	 */
 	@AnalysisResponseCacheAble
@@ -84,7 +84,7 @@ public class CashFlowQueryController {
         String planCode = cashFlowQueryParamDTO.getPlanCode();
         // 判断计划现金流数据来源--导入/复合
         TplanInfo plan = planInfoService.getPlanInfo(planCode);
-        
+
         // 将计划当成组合计算,直接取值
         if (CalculateType.directCalc.getCode().equals(plan.getCalculateType())) {
         	// 获取计划下所有组合
@@ -104,36 +104,40 @@ public class CashFlowQueryController {
         	cashFlowQueryParamDTO.setPortType(PortType.plan.getCode());
         	cashFlowQueryParamDTO.setPortCalcType(PortCalcType.compositeAndContrast.name());
         }
-        
+
         // 指标计算
         AnalysisIndexCalcResultBO resultBO = analysisIndexCalcService.calc("cashFlow", cashFlowQueryParamDTO);
 
         List<Map<String,Object>> newDataList = new ArrayList<Map<String,Object>>();
+        List<Map<String,Object>> planDataList = new ArrayList<Map<String,Object>>();
         if(resultBO.getSuccessful()) {
         	//调用成功,修改计划列名称,过滤现金流为0的数据
             List<Map<String,Object>> dataList = resultBO.getResultList();
             for(Map<String, Object> data : dataList) {
-            	if (planCode.equals(data.get("portCode"))) {
-            		data.put("pName", "横向统计");
-            	}
             	Double net = NumberUtils.convertToDouble(data.get("gbPCfNet"));
             	if (BigDecimal.ZERO.compareTo(new BigDecimal(net)) != 0) {
-            		newDataList.add(data);
+            		if (planCode.equals(data.get("portCode"))) {
+            			data.put("pName", "横向统计");
+            			planDataList.add(data);
+            		} else {
+            			newDataList.add(data);
+            		}
             	}
             }
+            newDataList.addAll(planDataList);
         }
 
         HttpBaseResponse baseResponse = new HttpBaseResponse(resultBO.getCode(), resultBO.getMessage(), newDataList);
 
         return baseResponse;
     }
-	
+
 	/**
 	 * @Title: cashFlowTable
 	 * @Description: 现金流表行转列
 	 * @param: requestId
 	 * @param: row2CellDTO
-	 * @return: HttpBaseResponse   
+	 * @return: HttpBaseResponse
 	 * @throws
 	 */
 	@RequestMapping(value = "/cashFlowTable", method = { RequestMethod.GET, RequestMethod.POST })
@@ -142,15 +146,15 @@ public class CashFlowQueryController {
 		// 按日期排序
         row2CellDTO.setSortField("endDate");
         row2CellDTO.setSortType("desc");
-        
+
         Row2CellTableDataFormat dataFormat = new Row2CellTableDataFormat();
         SimpleTableResultModel tableResultModel = (SimpleTableResultModel) dataFormat.doFormat(dataList, row2CellDTO);
 
         // 列排序
         List<TableColumnModel> newColumnModelList = new ArrayList<TableColumnModel>();
-        TableColumnModel columnModelPlan = new TableColumnModel();
+        TableColumnModel columnModelPlan = null;
         List<TableColumnModel> columnModelList = tableResultModel.getColumnModelList();
-        
+
         for (TableColumnModel columnModel : columnModelList) {
         	if (!"横向统计".equals(columnModel.getLabel())) {
         		newColumnModelList.add(columnModel);
@@ -158,8 +162,10 @@ public class CashFlowQueryController {
         		columnModelPlan = columnModel;
         	}
         }
-        newColumnModelList.add(columnModelPlan);
-        
+        if(columnModelPlan != null) {
+            newColumnModelList.add(columnModelPlan);
+        }
+
         HttpDynamicColumnListResult dynamicColumnListResult = new HttpDynamicColumnListResult(tableResultModel.getDataList(), tableResultModel.getTotal(), newColumnModelList);
 
         return HttpBaseResponseUtil.getSuccessResponse(dynamicColumnListResult);
@@ -169,7 +175,7 @@ public class CashFlowQueryController {
 	 * @Title: calcPlanCashFlow
 	 * @Description: 计划层申赎统计
 	 * @param: cashFlowQueryParamDTO
-	 * @return: HttpBaseResponse   
+	 * @return: HttpBaseResponse
 	 * @throws
 	 */
 	@AnalysisResponseCacheAble
@@ -177,14 +183,14 @@ public class CashFlowQueryController {
     public HttpBaseResponse calcPlanCashFlow(CashFlowQueryParamDTO cashFlowQueryParamDTO) {
 		cashFlowQueryParamDTO.setLandMid(false);
         String planCode = cashFlowQueryParamDTO.getPlanCode();
-        
+
         List<String> portCodes = new ArrayList<>();
         portCodes.add(planCode);
         cashFlowQueryParamDTO.setPortCode(portCodes);
-        
+
         // 判断计划现金流数据来源--导入/复合
         TplanInfo plan = planInfoService.getPlanInfo(planCode);
-        
+
         // 将计划当成组合计算,直接取值
         if (CalculateType.directCalc.getCode().equals(plan.getCalculateType())) {
             cashFlowQueryParamDTO.setPortType(PortType.port.getCode());
@@ -193,7 +199,7 @@ public class CashFlowQueryController {
         	cashFlowQueryParamDTO.setPortType(PortType.plan.getCode());
         	cashFlowQueryParamDTO.setPortCalcType(PortCalcType.single.name());
         }
-        
+
         // 指标计算
         AnalysisIndexCalcResultBO resultBO = analysisIndexCalcService.calc("cashFlow", cashFlowQueryParamDTO);
 

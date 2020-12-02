@@ -96,9 +96,12 @@ tomcat:
 appserver:
   port:
     tree-type: '02'
-    
+
 sso:
   enabled: true
+  clientId: ST001
   cas:
     casServerLoginUrl: http://191.168.0.27:8080/cas
     serverName: http://localhost:8080/ssoLogin
+    casServerAddress: 191.168.0.27
+    casServerPort: 8080

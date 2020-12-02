@@ -35,7 +35,7 @@ public class ConditionModel {
     //目标数据类型，key,value
     private DestType destType;
     //条件，等于，不等于
-    private Operator operater;
+    private Operator operator;
 
     public String getSource() {
         return source;
@@ -61,12 +61,12 @@ public class ConditionModel {
         this.destType = destType;
     }
 
-    public Operator getOperater() {
-        return operater;
+    public Operator getOperator() {
+        return operator;
     }
 
-    public void setOperater(Operator operater) {
-        this.operater = operater;
+    public void setOperator(Operator operator) {
+        this.operator = operator;
     }
 
     public enum Operator{

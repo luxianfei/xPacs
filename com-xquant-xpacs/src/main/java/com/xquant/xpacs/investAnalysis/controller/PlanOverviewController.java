@@ -650,11 +650,11 @@ public class PlanOverviewController {
 				ImageEntity imageEntity = new ImageEntity();
 				imageEntity.setData(imgBytes);
 				if (i <= 1) {
-					imageEntity.setColspan(5);
-					imageEntity.setRowspan(26);
+					imageEntity.setColspan(9);
+					imageEntity.setRowspan(23);
 				} else {
-					imageEntity.setColspan(4);
-					imageEntity.setRowspan(27);
+					imageEntity.setColspan(3);
+					imageEntity.setRowspan(21);
 				}
 				dataMap.put("chart" + (++i), imageEntity);
 			} catch (IOException e) {

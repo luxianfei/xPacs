@@ -79,13 +79,6 @@ public class SubjectValueController {
         InputStream inputStream = null;
         OutputStream outputStream = null;
         try {
-            inputStream = new BufferedInputStream(new FileInputStream(file));
-            byte[] buffer = new byte[inputStream.available()];
-            inputStream.read(buffer);
-            inputStream.close();
-
-            response.reset();
-            // 设置response的Header
 
             String fileName;
             String encodeFileName;
@@ -107,20 +100,31 @@ public class SubjectValueController {
             response.setHeader("Access-Control-Expose-Headers", "FileName");
 
             response.addHeader("Content-Length", "" + file.length());
-            outputStream = new BufferedOutputStream(response.getOutputStream());
             response.setContentType("application/octet-stream");
-            outputStream.write(buffer);
+
+            inputStream = new FileInputStream(file);
+
+            outputStream = response.getOutputStream();
+            int read;
+            while ((read = inputStream.read()) != -1) {
+                outputStream.write(read);
+            }
+
             outputStream.flush();
         } catch (FileNotFoundException e) {
 
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error("IO异常", e);
         } finally {
             try {
-                inputStream.close();
-                outputStream.close();
+                if(inputStream != null) {
+                    inputStream.close();
+                }
+                if(outputStream != null) {
+                    outputStream.close();
+                }
             } catch (IOException e) {
-                e.printStackTrace();
+                LOGGER.error("IO异常", e);
             }
 
         }
@@ -161,12 +165,14 @@ public class SubjectValueController {
             return ResponseEntity.ok(httpBaseResponse);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.error("估值表预览异常", e);
         } finally {
             try {
-                writer.close();
+                if(writer != null) {
+                    writer.close();
+                }
             } catch (IOException e) {
-                e.printStackTrace();
+                LOGGER.error("IO", e);
             }
         }
         return null;
@@ -201,11 +207,9 @@ public class SubjectValueController {
     @PostMapping("/bachDownLoad")
     public ResponseEntity<HttpBaseResponse> bachDownLoad(@RequestBody SubjectValueBachDownLoadDTO downLoadDTO,
                                                          HttpServletRequest request, HttpServletResponse response) {
-        ZipOutputStream outputStream = null;
-        BufferedOutputStream bos = null;
+        ZipOutputStream zipOutputStream = null;
         try {
-            outputStream = new ZipOutputStream(response.getOutputStream());
-            bos = new BufferedOutputStream(outputStream);
+            zipOutputStream = new ZipOutputStream(response.getOutputStream());
 
 
             TplanInfo tplanInfo = planInfoService.getPlanInfo(downLoadDTO.getPlanCode());
@@ -234,17 +238,15 @@ public class SubjectValueController {
 
             for(File file : files){
                 String fName = file.getName();
-                outputStream.putNextEntry(new ZipEntry(fName));
+                zipOutputStream.putNextEntry(new ZipEntry(fName));
 
-                BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file));
-
-                int len = 0;
-                byte[] buf = new byte[10 * 1024];
-                while( (len = bis.read(buf, 0, buf.length)) != -1){
-                    bos.write(buf, 0, len);
+                FileInputStream inputStream = new FileInputStream(file);
+                int read;
+                while ((read = inputStream.read()) != -1) {
+                    zipOutputStream.write(read);
                 }
-                bis.close();
-                bos.flush();
+
+                inputStream.close();
             }
 
 
@@ -255,10 +257,12 @@ public class SubjectValueController {
             return ResponseEntity.ok(HttpBaseResponseUtil.getFailResponse("估值表下载失败"));
         } finally {
             try {
-                outputStream.close();
-                bos.close();
+                if(zipOutputStream != null) {
+                    zipOutputStream.closeEntry();
+                    zipOutputStream.close();
+                }
             } catch (IOException e) {
-                e.printStackTrace();
+                LOGGER.error("IO异常", e);
             }
         }
     }

@@ -101,7 +101,7 @@ public class SimpleEchartDataFormat extends AbstractDataFormat {
                     legend = StringUtils.defaultIfNull(data.get(model.getLegend()));
                 }
 
-                if (legend.equals("")) {
+                if ("".equals(legend)) {
                     continue;
                 }
 

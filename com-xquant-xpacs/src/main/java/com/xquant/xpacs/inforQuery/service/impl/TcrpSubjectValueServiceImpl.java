@@ -34,6 +34,8 @@ import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.ss.util.RegionUtil;
 import org.apache.poi.xssf.usermodel.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -53,6 +55,7 @@ import java.util.zip.ZipOutputStream;
  */
 @Service
 public class TcrpSubjectValueServiceImpl implements ITcrpSubjectValueService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(TcrpSubjectValueServiceImpl.class);
 
     @Autowired
     private TcrpSubjectValueMapper subjectValueMapper;
@@ -264,7 +267,7 @@ public class TcrpSubjectValueServiceImpl implements ITcrpSubjectValueService {
         Row row0 = sheet.createRow(0);
         Cell cell0 = row0.createCell(0);
 
-        String title = tprt.getpName() + "组合委托资产资产估值表" + tDate.replace("-","");
+        String title = tprt.getpName() + "委托资产资产估值表" + tDate.replace("-","");
         cell0.setCellValue(title);
 
         cell0.setCellStyle(s1);
@@ -655,7 +658,7 @@ public class TcrpSubjectValueServiceImpl implements ITcrpSubjectValueService {
 
         //获取配置的路径
         SysParam sysParam = sysParamService.getSysParam("SUBJECT_EXCEL_PATH");
-        String path = sysParam.getpValue();
+        String path = "E:/估值表/";//sysParam.getpValue();
         File dir = new File(path);
         if(!dir.exists()) {
             dir.mkdir();
@@ -669,14 +672,16 @@ public class TcrpSubjectValueServiceImpl implements ITcrpSubjectValueService {
             outputStream.flush();
             workbook.write(outputStream);
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            LOGGER.error("文件未找到", e);
         } catch (IOException e) {
-            e.printStackTrace();
+            LOGGER.error("IO异常", e);
         } finally {
             try {
-                outputStream.close();
+                if(outputStream != null) {
+                    outputStream.close();
+                }
             } catch (IOException e) {
-                e.printStackTrace();
+                LOGGER.error("IO异常", e);
             }
         }
     }
@@ -694,7 +699,7 @@ public class TcrpSubjectValueServiceImpl implements ITcrpSubjectValueService {
         String fileName = this.getSubjectValueFielName(portCode, tDate);
 
         SysParam sysParam = sysParamService.getSysParam("SUBJECT_EXCEL_PATH");
-        String path = sysParam.getpValue();
+        String path = "E:/估值表/";//sysParam.getpValue();
         File dir = new File(path);
 
         String absoluteFilePath = dir.getAbsolutePath() + "/" + fileName;

@@ -72,4 +72,14 @@ public interface ITprtService {
      *
      */
     Map<String,String> getLatestNavDateByPortCode(String portCode);
+    
+    /**
+     * @Title: getRetainPortListByPlanCode
+     * @Description: 获取未到期的组合
+     * @param: planCode
+     * @param: tDate
+     * @return: List<Tprt>   
+     * @throws
+     */
+    List<Tprt> getRetainPortListByPlanCode(String planCode, String tDate);
 }

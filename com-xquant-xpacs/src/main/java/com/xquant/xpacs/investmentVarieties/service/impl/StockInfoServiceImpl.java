@@ -11,6 +11,7 @@ import com.xquant.xpims.security.tbnd.entity.dto.TbndDTO;
 import com.xquant.xpims.security.tbnd.entity.po.Tbnd;
 import com.xquant.xpims.security.tbnd.entity.po.TbndExtRatingExample;
 import com.xquant.xpims.security.tbnd.entity.po.TcompanyRatingExample;
+import com.xquant.xpims.security.tbnd.entity.po.ext.TbndExt;
 import com.xquant.xpims.security.tbnd.entity.po.ext.TbndExtRatingExt;
 import com.xquant.xpims.security.tbnd.entity.po.ext.TcompanyRatingExt;
 import com.xquant.xpims.security.tbnd.mapper.ext.TbndExtRatingMapperExt;
@@ -56,7 +57,7 @@ public class StockInfoServiceImpl implements StockInfoService {
     }
 
     @Override
-    public Tbnd getTbndDetail(TbndDTO tbndDTO) {
+    public TbndExt getTbndDetail(TbndDTO tbndDTO) {
         return tbndMapper.getTbndDetail(tbndDTO);
     }
 

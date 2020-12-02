@@ -17,6 +17,7 @@ package com.xquant.xpacs.common.format.model;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.xquant.xpacs.common.format.DataFilterModel;
 import com.xquant.xpacs.common.format.DataKeyMapping;
 import com.xquant.xpacs.common.format.DataMergeModel;
 
@@ -42,6 +43,8 @@ public class AnalysisBaseDTO {
     private String keyMappingStr;
     /**数据合并条件*/
     private String merge;
+    /**数据过滤条件*/
+    private DataFilterModel dataFilter;
 //    private List<DataKeyMapping> keyMappings;
 
     public String getRequestId() {
@@ -112,5 +115,13 @@ public class AnalysisBaseDTO {
             return JSONObject.parseObject(this.merge,DataMergeModel.class);
         }
         return null;
+    }
+
+    public DataFilterModel getDataFilter() {
+        return dataFilter;
+    }
+
+    public void setDataFilter(DataFilterModel dataFilter) {
+        this.dataFilter = dataFilter;
     }
 }

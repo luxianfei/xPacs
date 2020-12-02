@@ -9,10 +9,12 @@ import com.xquant.base.index.enums.PortCalcType;
 import com.xquant.base.index.enums.PortType;
 import com.xquant.common.bean.CommonResp;
 import com.xquant.common.bean.GridPageResp;
+import com.xquant.common.bean.HttpPageListResult;
 import com.xquant.common.util.BigDecimalUtils;
 import com.xquant.xpacs.analysis.entity.bo.AnalysisIndexCalcResultBO;
 import com.xquant.xpacs.analysis.entity.dto.AnalysisBaseParamDTO;
 import com.xquant.xpacs.analysis.service.api.IAnalysisIndexCalcService;
+import com.xquant.xpacs.analysis.support.AnalysisResponse;
 import com.xquant.xpacs.analysis.support.AnalysisResponseCacheAble;
 import com.xquant.xpacs.base.http.HttpBaseResponse;
 import com.xquant.xpacs.base.port.service.api.ITprtService;
@@ -34,6 +36,7 @@ import com.xquant.xpims.tfinprod.entity.po.ext.TfinprodDetailInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -67,10 +70,12 @@ public class StockInfoController {
     @AnalysisResponseCacheAble
     @RequestMapping(value = "/calcAssetInfoList", method = { RequestMethod.GET, RequestMethod.POST })
     public HttpBaseResponse calcAssetInfoList(AnalysisBaseParamDTO analysisBaseParamDTO) {
-        analysisBaseParamDTO.setLandMid(false);
+        //analysisBaseParamDTO.setLandMid(false);
         analysisBaseParamDTO.setPortType(PortType.port.getCode());
-        if(analysisBaseParamDTO.getPortCode().size() == 0){
-            analysisBaseParamDTO.getPortCode().add(analysisBaseParamDTO.getPlanCode());
+        if(analysisBaseParamDTO.getPortCode()==null||analysisBaseParamDTO.getPortCode().size() == 0){
+            List<String> portCode=new ArrayList<>();
+            portCode.add(analysisBaseParamDTO.getPlanCode());
+            analysisBaseParamDTO.setPortCode(portCode);
             analysisBaseParamDTO.setPortType(PortType.plan.getCode());
         }
         analysisBaseParamDTO.setPortCalcType(PortCalcType.single.name());
@@ -83,13 +88,17 @@ public class StockInfoController {
         analysisBaseParamDTO.setPortType(PortType.plan.getCode());
         AnalysisIndexCalcResultBO planNav = analysisIndexCalcService.calc("totalNav", analysisBaseParamDTO);
 
+        List<Map<String,Object>> resultList = new ArrayList<>();
         if(stockInfoList.getResultList().size()>0){
             for(Map<String,Object> stockInfo : stockInfoList.getResultList()){
-                stockInfo.put("gbHldWMtmRoot", BigDecimalUtils.divide(new BigDecimal(stockInfo.get("gbHldMtm").toString()),new BigDecimal(planNav.getResultList().get(0).get("gbPTotalNav").toString())));
+                if(new BigDecimal(stockInfo.get("gbHldMtm").toString()).compareTo(BigDecimal.ZERO)!=0){
+                    stockInfo.put("gbHldWMtmRoot", BigDecimalUtils.divide(new BigDecimal(stockInfo.get("gbHldMtm").toString()),new BigDecimal(planNav.getResultList().get(0).get("gbPTotalNav").toString())));
+                    resultList.add(stockInfo);
+                }
             }
         }
 
-        HttpBaseResponse baseResponse = new HttpBaseResponse(stockInfoList.getCode(), stockInfoList.getMessage(), stockInfoList.getResultList());
+        HttpBaseResponse baseResponse = new HttpBaseResponse(stockInfoList.getCode(), stockInfoList.getMessage(), resultList);
 
         return baseResponse;
     }
@@ -168,13 +177,17 @@ public class StockInfoController {
      * @param request
      * @return
      */
-    @GetMapping("/getSecurityHldTracing")
+    @AnalysisResponse(isAnalysis = false)
+    @RequestMapping(value="/getSecurityHldTracing",method = {RequestMethod.GET,RequestMethod.POST})
     public HttpBaseResponse getSecurityHldTracing(SecurityHldTracingDTO securityHldTracingDTO, HttpServletRequest request) {
         //LoginUserBO loginUserBO = (LoginUserBO) request.getSession().getAttribute(UserConstant.SESSION_USER);
         //securityHldTracingDTO.setUserId(loginUserBO.getUserId());
-        Page page = PageHelper.startPage(securityHldTracingDTO.getPageNum(),securityHldTracingDTO.getPageSize());
+        Page page=null;
+        if(securityHldTracingDTO.getPageNum()!=null){
+            page = PageHelper.startPage(securityHldTracingDTO.getPageNum(),securityHldTracingDTO.getPageSize());
+        }
         List<SecurityHldTracingPO> securityHldTracingPOList = stockInfoService.getSecurityHldTracing(securityHldTracingDTO);
-        GridPageResp resp = new GridPageResp(securityHldTracingPOList,page.getTotal());
+        HttpPageListResult resp = new HttpPageListResult(securityHldTracingPOList,page==null?0:page.getTotal());
         return new HttpBaseResponse(resp);
     }
 

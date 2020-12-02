@@ -18,6 +18,8 @@ package com.xquant.xpacs.analysis.controller;
 import com.xquant.xpacs.analysis.enums.EnumWebComponent;
 import com.xquant.xpacs.analysis.service.api.IAnalysisDataCacheService;
 import com.xquant.xpacs.analysis.support.AnalysisResponse;
+import com.xquant.xpacs.base.http.HttpBaseResponse;
+import com.xquant.xpacs.base.http.HttpBaseResponseUtil;
 import com.xquant.xpacs.common.format.model.AnalysisRow2CellDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -49,9 +51,10 @@ public class AnalysisWebComponentController {
      */
     @AnalysisResponse(webComponent = EnumWebComponent.TABLE)
     @RequestMapping(value = "/defaultTable", method = { RequestMethod.GET, RequestMethod.POST })
-    public List<Map<String,Object>> defaultTable(String requestId) {
+    public HttpBaseResponse defaultTable(String requestId) {
         List<Map<String,Object>> dataList = dataCacheService.getCache(requestId);
-        return dataList;
+        HttpBaseResponse baseResponse = HttpBaseResponseUtil.getListResponse(dataList);
+        return baseResponse;
     }
 
     /**
@@ -65,9 +68,10 @@ public class AnalysisWebComponentController {
      */
     @AnalysisResponse(webComponent = EnumWebComponent.ROW_2_CELL_TABLE)
     @RequestMapping(value = "/defaultRow2CellTable", method = { RequestMethod.GET, RequestMethod.POST })
-    public List<Map<String,Object>> defaultRow2CellTable(String requestId) {
+    public HttpBaseResponse defaultRow2CellTable(String requestId) {
         List<Map<String,Object>> dataList = dataCacheService.getCache(requestId);
-        return dataList;
+        HttpBaseResponse baseResponse = HttpBaseResponseUtil.getListResponse(dataList);
+        return baseResponse;
     }
 
     /**
@@ -80,9 +84,10 @@ public class AnalysisWebComponentController {
      */
     @AnalysisResponse(webComponent = EnumWebComponent.TREE_TABLE)
     @RequestMapping(value = "/defaultTreeTable", method = { RequestMethod.GET, RequestMethod.POST })
-    public List<Map<String,Object>> defaultTreeTable(String requestId) {
+    public HttpBaseResponse defaultTreeTable(String requestId) {
         List<Map<String,Object>> dataList = dataCacheService.getCache(requestId);
-        return dataList;
+        HttpBaseResponse baseResponse = HttpBaseResponseUtil.getListResponse(dataList);
+        return baseResponse;
     }
 
     /**
@@ -96,8 +101,9 @@ public class AnalysisWebComponentController {
      */
     @AnalysisResponse(webComponent = EnumWebComponent.E_CHART)
     @RequestMapping(value = "/defaultChart", method = { RequestMethod.GET, RequestMethod.POST })
-    public List<Map<String, Object>> defaultChart(String requestId) {
+    public HttpBaseResponse defaultChart(String requestId) {
         List<Map<String,Object>> dataList = dataCacheService.getCache(requestId);
-        return dataList;
+        HttpBaseResponse baseResponse = HttpBaseResponseUtil.getListResponse(dataList);
+        return baseResponse;
     }
 }

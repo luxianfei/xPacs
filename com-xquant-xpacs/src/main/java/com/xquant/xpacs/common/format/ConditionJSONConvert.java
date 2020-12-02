@@ -119,12 +119,12 @@ public class ConditionJSONConvert {
                     String dest = "";
                     if(chars[i] == '!' && chars[i+1] == '=') {
                         conditionModel.setSource(onCon.substring(prePos,i));
-                        conditionModel.setOperater(ConditionModel.Operator.UNEQUAL);
+                        conditionModel.setOperator(ConditionModel.Operator.UNEQUAL);
                         dest = onCon.substring(i+2);
                         i++;
                     } else if(opCodes.contains(String.valueOf(chars[i]))) {
                         conditionModel.setSource(onCon.substring(prePos,i));
-                        conditionModel.setOperater(ConditionModel.Operator.getOperatorByCode(String.valueOf(chars[i])));
+                        conditionModel.setOperator(ConditionModel.Operator.getOperatorByCode(String.valueOf(chars[i])));
                         dest = onCon.substring(i+1);
                     }
 

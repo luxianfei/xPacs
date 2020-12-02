@@ -15,23 +15,37 @@
  ********************************************/
 package com.xquant.xpacs.assetallocation.controller;
 
+import cn.afterturn.easypoi.entity.ImageEntity;
+import cn.afterturn.easypoi.excel.ExcelExportUtil;
+import cn.afterturn.easypoi.excel.entity.TemplateExportParams;
 import com.xquant.base.param.entity.po.SysParam;
 import com.xquant.base.param.service.api.SysParamService;
+import com.xquant.common.util.DateUtils;
 import com.xquant.common.util.NumberUtils;
 import com.xquant.common.util.StringUtils;
+import com.xquant.common.util.excel.ExcelExportUtils;
 import com.xquant.xpacs.analysis.entity.bo.AnalysisIndexCalcResultBO;
 import com.xquant.xpacs.analysis.entity.dto.AnalysisBaseParamDTO;
+import com.xquant.xpacs.analysis.entity.dto.TableChartExportBaseDTO;
+import com.xquant.xpacs.analysis.service.api.IAnalysisDataCacheService;
 import com.xquant.xpacs.analysis.service.api.IAnalysisIndexAsyncCalcService;
 import com.xquant.xpacs.analysis.service.api.IAnalysisIndexCalcService;
 import com.xquant.xpacs.analysis.support.AnalysisResponseCacheAble;
+import com.xquant.xpacs.assetallocation.util.JxlsUtils;
 import com.xquant.xpacs.base.http.HttpBaseResponse;
+import com.xquant.xpacs.investAnalysis.enums.CalcObjType;
 import com.xquant.xpacs.investmentVarieties.service.api.StockInfoService;
 import com.xquant.xpims.security.tstk.entity.po.ext.TstkExt;
+import com.xquant.xpims.tprt.entity.po.Tprt;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.web.bind.annotation.*;
+import sun.misc.BASE64Decoder;
 
+import javax.servlet.http.HttpServletResponse;
+import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -49,6 +63,8 @@ public class StkAssetStatisticsController {
     private IAnalysisIndexCalcService analysisIndexCalcService;
     @Autowired
     private IAnalysisIndexAsyncCalcService analysisIndexAsyncCalcService;
+    @Autowired
+    private IAnalysisDataCacheService dataCacheService;
     @Autowired
     private StockInfoService stockInfoService;
     @Autowired
@@ -116,7 +132,7 @@ public class StkAssetStatisticsController {
 
             if(resultBO.getSuccessful()) {
                 List<Map<String,Object>> dataList = resultBO.getResultList();
-                Map<String, Object> data = dataList.get(0);
+                Map<String, Object> data = dataList.isEmpty() ? new HashMap<>() : dataList.get(0);
                 data.put("dpgWeight", dpgWeight);
                 data.put("zpgWeight", zpgWeight);
                 data.put("xpgWeight", xpgWeight);
@@ -171,5 +187,53 @@ public class StkAssetStatisticsController {
         pclassMap.put("xpg", xpgStk);
 
         return pclassMap;
+    }
+
+    /**
+     * 导出股票表格
+     * @param exportBaseDTO
+     * @param response
+     * @return
+     */
+    @PostMapping("/exportStkAssetStatistics")
+    public HttpBaseResponse exportStkAssetStatistics(@RequestBody TableChartExportBaseDTO exportBaseDTO, HttpServletResponse response) {
+        Map<String, Object> dataMap = new HashMap<>();
+        // 缓存表格数据获取
+        List<String> requestIds = exportBaseDTO.getRequestIds();
+        //统计信息
+        String statisticsRequestId = requestIds.get(0);
+        List<Map<String,Object>> statisticsDataList = dataCacheService.getCache(statisticsRequestId);
+        Map<String, Object> stkInfo = statisticsDataList.get(0);
+        dataMap.put("stkInfo", statisticsDataList.get(0));
+
+        //大盘股比例
+        SysParam largeSysParam = sysParamService.getSysParam("LARGE_CAP_STOCK");
+        //中盘股比例
+        SysParam midSysParam = sysParamService.getSysParam("MID_CAP_STOCK");
+
+        Double largeD = largeSysParam == null ? 10D : NumberUtils.convertToDouble(largeSysParam.getpValue(), 10D);
+        Double midD = midSysParam == null ? 20D : NumberUtils.convertToDouble(midSysParam.getpValue(), 20D);
+
+        String desc = "注：大盘股：前"+ largeD +"%，中盘股：前" + largeD + "% - " + midD + "%，小盘股：" + midD + "% - 100%";
+        dataMap.put("desc",desc);
+
+        List<Map<String,Object>> dataList = dataCacheService.getCache(requestIds.get(1));
+        dataMap.put("list1", dataList);
+
+        // 图片数据获取
+        BASE64Decoder decoder = new BASE64Decoder();
+        List<String> chartDatas = exportBaseDTO.getChartDatas();
+        int i = 0;
+        for(String chartData : chartDatas) {
+            try {
+                byte[] imgBytes = decoder.decodeBuffer(chartData);
+                dataMap.put("chart" + (++i), imgBytes);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        String fileName = "股票资产统计.xlsx";
+        JxlsUtils.downLoadExcel("stkStatisticsTemplate.xlsx", fileName, response, dataMap);
+        return null;
     }
 }

@@ -78,7 +78,8 @@ public abstract class AbstractDataFormat implements IAnalysisDataFormat {
 
     @Override
     public BaseResultModel doFormat(List<Map<String,Object>> dataList, AnalysisBaseDTO baseDTO) {
-        DataFilterModel filterModel = this.convertDataFilterModel(baseDTO.getFilter(),null);
+        DataFilterModel filterModel = baseDTO.getDataFilter() == null ?
+                this.convertDataFilterModel(baseDTO.getFilter(),null) : baseDTO.getDataFilter();
         return this.doFormat(dataList,filterModel,baseDTO);
     }
 
@@ -114,7 +115,7 @@ public abstract class AbstractDataFormat implements IAnalysisDataFormat {
                     //目标是key,或者value,
                     ConditionModel.DestType destType = singleCondition.getDestType();
                     //条件 = != > < %
-                    ConditionModel.Operator operator = singleCondition.getOperater();
+                    ConditionModel.Operator operator = singleCondition.getOperator();
 
                     //源值，对比值
                     String sourceVal = StringUtils.defaultIfNull(data.get(sourceKey));

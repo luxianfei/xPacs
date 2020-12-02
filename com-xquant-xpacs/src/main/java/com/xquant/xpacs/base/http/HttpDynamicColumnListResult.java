@@ -15,6 +15,7 @@
  ********************************************/
 package com.xquant.xpacs.base.http;
 
+import com.xquant.common.bean.HttpPageListResult;
 import com.xquant.common.bean.bo.TableColumnModel;
 
 import java.util.List;
